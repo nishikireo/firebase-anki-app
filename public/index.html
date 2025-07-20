@@ -155,7 +155,7 @@
         const noDecksMessage = document.getElementById('no-decks-message');
 
         let currentUserId = null;
-        let decksUnsubscribe = null; // デッキのリスナーを管理q
+        let decksUnsubscribe = null; // デッキのリスナーを管理
 
         // === 認証状態の監視 ===
         onAuthStateChanged(auth, (user) => {
@@ -181,26 +181,37 @@
 
         // === 認証関連のイベントリスナー ===
 
-        // タブ切り替え
+        // --- [修正箇所] タブ切り替えロジック ---
         showLoginTab.addEventListener('click', () => {
             loginForm.classList.remove('hidden');
             signupForm.classList.add('hidden');
-            showLoginTab.classList.add('text-indigo-600', 'border-indigo-600');
+
+            // ログインタブをアクティブに
+            showLoginTab.classList.add('text-indigo-600', 'border-indigo-600', 'border-b-2');
             showLoginTab.classList.remove('text-gray-500');
+
+            // 新規登録タブを非アクティブに
             showSignupTab.classList.add('text-gray-500');
-            showSignupTab.classList.remove('text-indigo-600', 'border-indigo-600');
+            showSignupTab.classList.remove('text-indigo-600', 'border-indigo-600', 'border-b-2');
+            
             authError.textContent = '';
         });
 
         showSignupTab.addEventListener('click', () => {
             signupForm.classList.remove('hidden');
             loginForm.classList.add('hidden');
-            showSignupTab.classList.add('text-indigo-600', 'border-indigo-600');
+
+            // 新規登録タブをアクティブに
+            showSignupTab.classList.add('text-indigo-600', 'border-indigo-600', 'border-b-2');
             showSignupTab.classList.remove('text-gray-500');
+
+            // ログインタブを非アクティブに
             showLoginTab.classList.add('text-gray-500');
-            showLoginTab.classList.remove('text-indigo-600', 'border-indigo-600');
+            showLoginTab.classList.remove('text-indigo-600', 'border-indigo-600', 'border-b-2');
+
             authError.textContent = '';
         });
+        // --- [修正箇所ここまで] ---
 
         // 新規登録
         document.getElementById('signup-button').addEventListener('click', async () => {
