@@ -11,7 +11,6 @@
         body {
             font-family: 'Inter', sans-serif;
         }
-        /* ちょっとしたアニメーション */
         .fade-in {
             animation: fadeIn 0.5s ease-in-out;
         }
@@ -31,7 +30,16 @@
 <body class="bg-gray-100 text-gray-800">
 
     <!-- 全体コンテナ -->
-    <div id="app-container" class="max-w-md mx-auto min-h-screen bg-white shadow-lg">
+    <div id="app-container" class="max-w-md mx-auto min-h-screen bg-white shadow-lg relative">
+        
+        <!-- 初期化エラー表示 -->
+        <div id="init-error-overlay" class="hidden absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center p-8">
+            <div class="text-center">
+                <i class="fas fa-exclamation-triangle text-4xl text-red-500"></i>
+                <h2 class="text-xl font-bold mt-4">初期化エラー</h2>
+                <p id="init-error-message" class="mt-2 text-gray-600">Firebaseの初期化に失敗しました。開発者コンソールで詳細を確認し、`index.html`内の`userFirebaseConfig`が正しく設定されているか確認してください。</p>
+            </div>
+        </div>
 
         <!-- ===== 認証画面 ===== -->
         <div id="auth-container" class="p-8">
@@ -113,33 +121,46 @@
 
     <!-- Firebase SDK -->
     <script type="module">
-        // Firebaseアプリの初期化
+        // Firebaseライブラリのインポート
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        // Firebase Authentication
-        import { 
-            getAuth, 
-            createUserWithEmailAndPassword, 
-            signInWithEmailAndPassword, 
-            signOut, 
-            onAuthStateChanged 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // Firestore
-        import { 
-            getFirestore, 
-            collection, 
-            addDoc, 
-            query, 
-            onSnapshot,
-            serverTimestamp
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // === Firebase設定 ===
-        // この設定オブジェクトは、ご自身のFirebaseプロジェクトのものに置き換えてください。
-        // __firebase_config はCanvas環境で自動的に提供されます。
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+        // 【重要】ご自身のFirebaseプロジェクト設定に書き換えてください
+        // Firebaseコンソールのプロジェクト設定ページ (歯車アイコン > プロジェクトの設定)
+        // で確認できる `firebaseConfig` オブジェクトの内容をここに貼り付けます。
+        
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyBiGe9ueuYzGfibPiwR7rCq1hrpoXuwKmI",
+  authDomain: "anki-app-nishikireo.firebaseapp.com",
+  projectId: "anki-app-nishikireo",
+  storageBucket: "anki-app-nishikireo.firebasestorage.app",
+  messagingSenderId: "812870291841",
+  appId: "1:812870291841:web:a3e505b56b303c127b1880",
+  measurementId: "G-KW7J5HW9TY"
+};
+        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
+        // この開発環境では __firebase_config を使い、それ以外（デプロイ後）では上記の設定を使います。
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : userFirebaseConfig;
 
         // === 初期化 ===
-        const app = initializeApp(firebaseConfig);
+        let app;
+        try {
+            app = initializeApp(firebaseConfig);
+        } catch (e) {
+            console.error("Firebase initialization failed:", e);
+            // エラーメッセージを表示して、ユーザーに問題を知らせる
+            document.getElementById('init-error-overlay').classList.remove('hidden');
+            // エラー発生時は以降の処理を中断
+            throw new Error("Firebase initialization failed. Check your firebaseConfig.");
+        }
+        
         const auth = getAuth(app);
         const db = getFirestore(app);
 
@@ -171,102 +192,76 @@
                 currentUserId = null;
                 authContainer.classList.remove('hidden');
                 mainAppContainer.classList.add('hidden');
-                // 既存のリスナーを停止
                 if (decksUnsubscribe) {
                     decksUnsubscribe();
                 }
-                deckList.innerHTML = ''; // デッキリストをクリア
+                deckList.innerHTML = '';
             }
         });
 
         // === 認証関連のイベントリスナー ===
-
-        // --- [修正箇所] タブ切り替えロジック ---
         showLoginTab.addEventListener('click', () => {
             loginForm.classList.remove('hidden');
             signupForm.classList.add('hidden');
-
-            // ログインタブをアクティブに
             showLoginTab.classList.add('text-indigo-600', 'border-indigo-600', 'border-b-2');
             showLoginTab.classList.remove('text-gray-500');
-
-            // 新規登録タブを非アクティブに
             showSignupTab.classList.add('text-gray-500');
             showSignupTab.classList.remove('text-indigo-600', 'border-indigo-600', 'border-b-2');
-            
             authError.textContent = '';
         });
 
         showSignupTab.addEventListener('click', () => {
             signupForm.classList.remove('hidden');
             loginForm.classList.add('hidden');
-
-            // 新規登録タブをアクティブに
             showSignupTab.classList.add('text-indigo-600', 'border-indigo-600', 'border-b-2');
             showSignupTab.classList.remove('text-gray-500');
-
-            // ログインタブを非アクティブに
             showLoginTab.classList.add('text-gray-500');
             showLoginTab.classList.remove('text-indigo-600', 'border-indigo-600', 'border-b-2');
-
             authError.textContent = '';
         });
-        // --- [修正箇所ここまで] ---
 
-        // 新規登録
         document.getElementById('signup-button').addEventListener('click', async () => {
             const email = document.getElementById('signup-email').value;
             const password = document.getElementById('signup-password').value;
             authError.textContent = '';
             try {
                 await createUserWithEmailAndPassword(auth, email, password);
-                // 成功するとonAuthStateChangedが発火する
             } catch (error) {
                 console.error("Signup Error:", error);
                 authError.textContent = getAuthErrorMessage(error.code);
             }
         });
 
-        // ログイン
         document.getElementById('login-button').addEventListener('click', async () => {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
             authError.textContent = '';
             try {
                 await signInWithEmailAndPassword(auth, email, password);
-                // 成功するとonAuthStateChangedが発火する
             } catch (error) {
                 console.error("Login Error:", error);
                 authError.textContent = getAuthErrorMessage(error.code);
             }
         });
 
-        // ログアウト
         document.getElementById('logout-button').addEventListener('click', async () => {
             try {
                 await signOut(auth);
-                // 成功するとonAuthStateChangedが発火する
             } catch (error) {
                 console.error("Logout Error:", error);
             }
         });
 
         // === デッキ管理機能 ===
-        
-        // デッキの読み込みと表示
         function loadDecks() {
             if (!currentUserId) return;
-
-            // 以前のリスナーがあれば解除
             if (decksUnsubscribe) {
                 decksUnsubscribe();
             }
-
             const decksRef = collection(db, 'users', currentUserId, 'decks');
-            const q = query(decksRef); // ここで orderBy なども追加可能
-
+            const q = query(decksRef);
             decksUnsubscribe = onSnapshot(q, (querySnapshot) => {
-                deckList.innerHTML = ''; // 表示をリセット
+                deckList.innerHTML = '';
                 if (querySnapshot.empty) {
                     noDecksMessage.classList.remove('hidden');
                 } else {
@@ -280,43 +275,30 @@
                 }
             }, (error) => {
                 console.error("Error loading decks: ", error);
-                // ここでユーザーにエラーを通知するUIを追加することもできます
             });
         }
 
-        // デッキカードのHTML要素を生成
         function createDeckElement(deck, id) {
             const div = document.createElement('div');
             div.className = 'deck-card bg-white p-4 rounded-lg shadow-md border border-gray-200 cursor-pointer fade-in';
             div.dataset.id = id;
-
             const icon = document.createElement('i');
             icon.className = 'fas fa-clone text-2xl text-indigo-400 mb-3';
-
             const name = document.createElement('h3');
             name.className = 'font-semibold text-gray-800 truncate';
             name.textContent = deck.name;
-            
-            // 将来的にカード数を表示するためのプレースホルダー
             const cardCount = document.createElement('p');
             cardCount.className = 'text-sm text-gray-500 mt-1';
-            cardCount.textContent = '0枚のカード'; // TODO: カード数を動的に取得
-
+            cardCount.textContent = '0枚のカード';
             div.appendChild(icon);
             div.appendChild(name);
             div.appendChild(cardCount);
-            
-            // TODO: デッキクリック時のイベントを追加
-            // div.addEventListener('click', () => showDeckDetail(id));
-
             return div;
         }
 
-        // 新しいデッキの追加
         document.getElementById('add-deck-button').addEventListener('click', async () => {
             const newDeckNameInput = document.getElementById('new-deck-name');
             const deckName = newDeckNameInput.value.trim();
-
             if (deckName && currentUserId) {
                 try {
                     const decksRef = collection(db, 'users', currentUserId, 'decks');
@@ -324,39 +306,30 @@
                         name: deckName,
                         createdAt: serverTimestamp()
                     });
-                    newDeckNameInput.value = ''; // 入力欄をクリア
+                    newDeckNameInput.value = '';
                 } catch (error) {
                     console.error("Error adding deck: ", error);
-                    // エラー通知UI
                 }
             }
         });
         
-        // Enterキーでもデッキ追加
         document.getElementById('new-deck-name').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 document.getElementById('add-deck-button').click();
             }
         });
 
-
         // === エラーメッセージ変換 ===
         function getAuthErrorMessage(errorCode) {
             switch (errorCode) {
-                case 'auth/invalid-email':
-                    return '有効なメールアドレスを入力してください。';
+                case 'auth/invalid-email': return '有効なメールアドレスを入力してください。';
                 case 'auth/user-not-found':
-                case 'auth/wrong-password':
-                    return 'メールアドレスまたはパスワードが間違っています。';
-                case 'auth/weak-password':
-                    return 'パスワードは6文字以上で設定してください。';
-                case 'auth/email-already-in-use':
-                    return 'このメールアドレスは既に使用されています。';
-                default:
-                    return '認証中にエラーが発生しました。';
+                case 'auth/wrong-password': return 'メールアドレスまたはパスワードが間違っています。';
+                case 'auth/weak-password': return 'パスワードは6文字以上で設定してください。';
+                case 'auth/email-already-in-use': return 'このメールアドレスは既に使用されています。';
+                default: return '認証中にエラーが発生しました。';
             }
         }
-
     </script>
 </body>
 </html>
