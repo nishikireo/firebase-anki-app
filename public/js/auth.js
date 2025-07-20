@@ -4,7 +4,8 @@ import {
     signOut,
     onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { ui, showView } from './ui.js';
+// uiオブジェクトは引数で受け取るように変更し、直接インポートしない
+import { showView } from './ui.js';
 import { auth } from './firebase.js';
 
 // Firebase Authのエラーコードを日本語メッセージに変換
@@ -26,7 +27,8 @@ const getAuthErrorMessage = (error) => {
 };
 
 // 認証関連のUIイベントを初期化
-export const initAuth = () => {
+// 引数としてuiオブジェクトと、ログイン・ログアウト時のコールバック関数を受け取る
+export const initAuth = (ui, { onLogin, onLogout }) => {
     // タブ切り替え
     ui.auth.showLoginTab.addEventListener('click', () => {
         ui.auth.loginForm.classList.remove('hidden');
@@ -77,10 +79,10 @@ export const initAuth = () => {
 
     // 認証状態の監視
     onAuthStateChanged(auth, (user) => {
-        if (user) {
-            showView('deck-view');
-        } else {
-            showView('auth-view');
+        if (user) { // ログイン時
+            onLogin(user);
+        } else { // ログアウト時
+            onLogout();
         }
     });
 };
