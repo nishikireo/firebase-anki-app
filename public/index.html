@@ -1,351 +1,89 @@
 <!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>暗記カードアプリ プロトタイプ</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        /* ちょっとしたアニメーション */
-        .fade-in {
-            animation: fadeIn 0.5s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .deck-card {
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .deck-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-        }
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Welcome to Firebase Hosting</title>
+
+    <!-- update the version number as needed -->
+    <script defer src="/__/firebase/12.0.0/firebase-app-compat.js"></script>
+    <!-- include only the Firebase features as you need -->
+    <script defer src="/__/firebase/12.0.0/firebase-auth-compat.js"></script>
+    <script defer src="/__/firebase/12.0.0/firebase-database-compat.js"></script>
+    <script defer src="/__/firebase/12.0.0/firebase-firestore-compat.js"></script>
+    <script defer src="/__/firebase/12.0.0/firebase-functions-compat.js"></script>
+    <script defer src="/__/firebase/12.0.0/firebase-messaging-compat.js"></script>
+    <script defer src="/__/firebase/12.0.0/firebase-storage-compat.js"></script>
+    <script defer src="/__/firebase/12.0.0/firebase-analytics-compat.js"></script>
+    <script defer src="/__/firebase/12.0.0/firebase-remote-config-compat.js"></script>
+    <script defer src="/__/firebase/12.0.0/firebase-performance-compat.js"></script>
+    <!-- 
+      initialize the SDK after all desired features are loaded, set useEmulator to false
+      to avoid connecting the SDK to running emulators.
+    -->
+    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
+
+    <style media="screen">
+      body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
+      #message { background: white; max-width: 360px; margin: 100px auto 16px; padding: 32px 24px; border-radius: 3px; }
+      #message h2 { color: #ffa100; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
+      #message h1 { font-size: 22px; font-weight: 300; color: rgba(0,0,0,0.6); margin: 0 0 16px;}
+      #message p { line-height: 140%; margin: 16px 0 24px; font-size: 14px; }
+      #message a { display: block; text-align: center; background: #039be5; text-transform: uppercase; text-decoration: none; color: white; padding: 16px; border-radius: 4px; }
+      #message, #message a { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
+      #load { color: rgba(0,0,0,0.4); text-align: center; font-size: 13px; }
+      @media (max-width: 600px) {
+        body, #message { margin-top: 0; background: white; box-shadow: none; }
+        body { border-top: 16px solid #ffa100; }
+      }
     </style>
-</head>
-<body class="bg-gray-100 text-gray-800">
-
-    <!-- 全体コンテナ -->
-    <div id="app-container" class="max-w-md mx-auto min-h-screen bg-white shadow-lg">
-
-        <!-- ===== 認証画面 ===== -->
-        <div id="auth-container" class="p-8">
-            <div class="text-center mb-12">
-                <i class="fas fa-layer-group text-4xl text-indigo-500"></i>
-                <h1 class="text-3xl font-bold mt-2">Anki App</h1>
-                <p class="text-gray-500">あなたの学習をサポート</p>
-            </div>
-
-            <!-- ログイン・サインアップ切り替えタブ -->
-            <div class="flex border-b mb-6">
-                <button id="show-login-tab" class="flex-1 py-2 font-semibold text-indigo-600 border-b-2 border-indigo-600">ログイン</button>
-                <button id="show-signup-tab" class="flex-1 py-2 font-semibold text-gray-500">新規登録</button>
-            </div>
-
-            <!-- ログインフォーム -->
-            <div id="login-form">
-                <div class="mb-4">
-                    <label for="login-email" class="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
-                    <input type="email" id="login-email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="email@example.com">
-                </div>
-                <div class="mb-6">
-                    <label for="login-password" class="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
-                    <input type="password" id="login-password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="********">
-                </div>
-                <button id="login-button" class="w-full bg-indigo-600 text-white py-3 rounded-md font-semibold hover:bg-indigo-700 transition">ログイン</button>
-            </div>
-
-            <!-- 新規登録フォーム (初期状態は非表示) -->
-            <div id="signup-form" class="hidden">
-                 <div class="mb-4">
-                    <label for="signup-email" class="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
-                    <input type="email" id="signup-email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="email@example.com">
-                </div>
-                <div class="mb-6">
-                    <label for="signup-password" class="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
-                    <input type="password" id="signup-password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="6文字以上">
-                </div>
-                <button id="signup-button" class="w-full bg-green-600 text-white py-3 rounded-md font-semibold hover:bg-green-700 transition">登録する</button>
-            </div>
-            <p id="auth-error" class="text-red-500 text-sm mt-4 text-center"></p>
-        </div>
-
-        <!-- ===== メインアプリ画面 (初期状態は非表示) ===== -->
-        <div id="main-app-container" class="hidden">
-            <!-- ヘッダー -->
-            <header class="flex items-center justify-between p-4 bg-indigo-600 text-white shadow-md">
-                <h1 class="text-xl font-bold">マイデッキ</h1>
-                <button id="logout-button" class="text-white hover:text-indigo-200 transition">
-                    <i class="fas fa-sign-out-alt mr-1"></i>ログアウト
-                </button>
-            </header>
-
-            <!-- デッキ一覧 -->
-            <main class="p-4">
-                <div id="deck-list" class="grid grid-cols-2 gap-4">
-                    <!-- デッキカードがここに挿入されます -->
-                </div>
-
-                <!-- デッキがない場合の表示 -->
-                <div id="no-decks-message" class="hidden text-center py-16">
-                    <i class="fas fa-box-open text-4xl text-gray-400"></i>
-                    <p class="mt-4 text-gray-500">まだデッキがありません。</p>
-                    <p class="text-gray-500">下のボタンから新しいデッキを作成しましょう！</p>
-                </div>
-            </main>
-
-            <!-- フッター & デッキ作成 -->
-            <footer class="p-4 sticky bottom-0 bg-white border-t">
-                <div class="flex items-center">
-                    <input type="text" id="new-deck-name" class="flex-grow px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="新しいデッキ名">
-                    <button id="add-deck-button" class="bg-indigo-600 text-white px-4 py-2 rounded-r-md hover:bg-indigo-700 transition">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                </div>
-            </footer>
-        </div>
+  </head>
+  <body>
+    <div id="message">
+      <h2>Welcome</h2>
+      <h1>Firebase Hosting Setup Complete</h1>
+      <p>You're seeing this because you've successfully setup Firebase Hosting. Now it's time to go build something extraordinary!</p>
+      <a target="_blank" href="https://firebase.google.com/docs/hosting/">Open Hosting Documentation</a>
     </div>
+    <p id="load">Firebase SDK Loading&hellip;</p>
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        // Firebaseアプリの初期化
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        // Firebase Authentication
-        import { 
-            getAuth, 
-            createUserWithEmailAndPassword, 
-            signInWithEmailAndPassword, 
-            signOut, 
-            onAuthStateChanged 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // Firestore
-        import { 
-            getFirestore, 
-            collection, 
-            addDoc, 
-            query, 
-            onSnapshot,
-            serverTimestamp
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const loadEl = document.querySelector('#load');
+        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
+        // // The Firebase SDK is initialized and available here!
+        //
+        // firebase.auth().onAuthStateChanged(user => { });
+        // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
+        // firebase.firestore().doc('/foo/bar').get().then(() => { });
+        // firebase.functions().httpsCallable('yourFunction')().then(() => { });
+        // firebase.messaging().requestPermission().then(() => { });
+        // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
+        // firebase.analytics(); // call to activate
+        // firebase.analytics().logEvent('tutorial_completed');
+        // firebase.performance(); // call to activate
+        //
+        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
 
-        // === Firebase設定 ===
-        // この設定オブジェクトは、ご自身のFirebaseプロジェクトのものに置き換えてください。
-        // __firebase_config はCanvas環境で自動的に提供されます。
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-
-        // === 初期化 ===
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        // === UI要素の取得 ===
-        const authContainer = document.getElementById('auth-container');
-        const mainAppContainer = document.getElementById('main-app-container');
-        const loginForm = document.getElementById('login-form');
-        const signupForm = document.getElementById('signup-form');
-        const showLoginTab = document.getElementById('show-login-tab');
-        const showSignupTab = document.getElementById('show-signup-tab');
-        const authError = document.getElementById('auth-error');
-        const deckList = document.getElementById('deck-list');
-        const noDecksMessage = document.getElementById('no-decks-message');
-
-        let currentUserId = null;
-        let decksUnsubscribe = null; // デッキのリスナーを管理
-
-        // === 認証状態の監視 ===
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // ログイン済み
-                currentUserId = user.uid;
-                authContainer.classList.add('hidden');
-                mainAppContainer.classList.remove('hidden');
-                mainAppContainer.classList.add('fade-in');
-                loadDecks();
-            } else {
-                // 未ログイン
-                currentUserId = null;
-                authContainer.classList.remove('hidden');
-                mainAppContainer.classList.add('hidden');
-                // 既存のリスナーを停止
-                if (decksUnsubscribe) {
-                    decksUnsubscribe();
-                }
-                deckList.innerHTML = ''; // デッキリストをクリア
-            }
-        });
-
-        // === 認証関連のイベントリスナー ===
-
-        // タブ切り替え
-        showLoginTab.addEventListener('click', () => {
-            loginForm.classList.remove('hidden');
-            signupForm.classList.add('hidden');
-            showLoginTab.classList.add('text-indigo-600', 'border-indigo-600');
-            showLoginTab.classList.remove('text-gray-500');
-            showSignupTab.classList.add('text-gray-500');
-            showSignupTab.classList.remove('text-indigo-600', 'border-indigo-600');
-            authError.textContent = '';
-        });
-
-        showSignupTab.addEventListener('click', () => {
-            signupForm.classList.remove('hidden');
-            loginForm.classList.add('hidden');
-            showSignupTab.classList.add('text-indigo-600', 'border-indigo-600');
-            showSignupTab.classList.remove('text-gray-500');
-            showLoginTab.classList.add('text-gray-500');
-            showLoginTab.classList.remove('text-indigo-600', 'border-indigo-600');
-            authError.textContent = '';
-        });
-
-        // 新規登録
-        document.getElementById('signup-button').addEventListener('click', async () => {
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
-            authError.textContent = '';
-            try {
-                await createUserWithEmailAndPassword(auth, email, password);
-                // 成功するとonAuthStateChangedが発火する
-            } catch (error) {
-                console.error("Signup Error:", error);
-                authError.textContent = getAuthErrorMessage(error.code);
-            }
-        });
-
-        // ログイン
-        document.getElementById('login-button').addEventListener('click', async () => {
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            authError.textContent = '';
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                // 成功するとonAuthStateChangedが発火する
-            } catch (error) {
-                console.error("Login Error:", error);
-                authError.textContent = getAuthErrorMessage(error.code);
-            }
-        });
-
-        // ログアウト
-        document.getElementById('logout-button').addEventListener('click', async () => {
-            try {
-                await signOut(auth);
-                // 成功するとonAuthStateChangedが発火する
-            } catch (error) {
-                console.error("Logout Error:", error);
-            }
-        });
-
-        // === デッキ管理機能 ===
-        
-        // デッキの読み込みと表示
-        function loadDecks() {
-            if (!currentUserId) return;
-
-            // 以前のリスナーがあれば解除
-            if (decksUnsubscribe) {
-                decksUnsubscribe();
-            }
-
-            const decksRef = collection(db, 'users', currentUserId, 'decks');
-            const q = query(decksRef); // ここで orderBy なども追加可能
-
-            decksUnsubscribe = onSnapshot(q, (querySnapshot) => {
-                deckList.innerHTML = ''; // 表示をリセット
-                if (querySnapshot.empty) {
-                    noDecksMessage.classList.remove('hidden');
-                } else {
-                    noDecksMessage.classList.add('hidden');
-                    querySnapshot.forEach((doc) => {
-                        const deck = doc.data();
-                        const deckId = doc.id;
-                        const deckElement = createDeckElement(deck, deckId);
-                        deckList.appendChild(deckElement);
-                    });
-                }
-            }, (error) => {
-                console.error("Error loading decks: ", error);
-                // ここでユーザーにエラーを通知するUIを追加することもできます
-            });
+        try {
+          let app = firebase.app();
+          let features = [
+            'auth', 
+            'database', 
+            'firestore',
+            'functions',
+            'messaging', 
+            'storage', 
+            'analytics', 
+            'remoteConfig',
+            'performance',
+          ].filter(feature => typeof app[feature] === 'function');
+          loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
+        } catch (e) {
+          console.error(e);
+          loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
         }
-
-        // デッキカードのHTML要素を生成
-        function createDeckElement(deck, id) {
-            const div = document.createElement('div');
-            div.className = 'deck-card bg-white p-4 rounded-lg shadow-md border border-gray-200 cursor-pointer fade-in';
-            div.dataset.id = id;
-
-            const icon = document.createElement('i');
-            icon.className = 'fas fa-clone text-2xl text-indigo-400 mb-3';
-
-            const name = document.createElement('h3');
-            name.className = 'font-semibold text-gray-800 truncate';
-            name.textContent = deck.name;
-            
-            // 将来的にカード数を表示するためのプレースホルダー
-            const cardCount = document.createElement('p');
-            cardCount.className = 'text-sm text-gray-500 mt-1';
-            cardCount.textContent = '0枚のカード'; // TODO: カード数を動的に取得
-
-            div.appendChild(icon);
-            div.appendChild(name);
-            div.appendChild(cardCount);
-            
-            // TODO: デッキクリック時のイベントを追加
-            // div.addEventListener('click', () => showDeckDetail(id));
-
-            return div;
-        }
-
-        // 新しいデッキの追加
-        document.getElementById('add-deck-button').addEventListener('click', async () => {
-            const newDeckNameInput = document.getElementById('new-deck-name');
-            const deckName = newDeckNameInput.value.trim();
-
-            if (deckName && currentUserId) {
-                try {
-                    const decksRef = collection(db, 'users', currentUserId, 'decks');
-                    await addDoc(decksRef, {
-                        name: deckName,
-                        createdAt: serverTimestamp()
-                    });
-                    newDeckNameInput.value = ''; // 入力欄をクリア
-                } catch (error) {
-                    console.error("Error adding deck: ", error);
-                    // エラー通知UI
-                }
-            }
-        });
-        
-        // Enterキーでもデッキ追加
-        document.getElementById('new-deck-name').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                document.getElementById('add-deck-button').click();
-            }
-        });
-
-
-        // === エラーメッセージ変換 ===
-        function getAuthErrorMessage(errorCode) {
-            switch (errorCode) {
-                case 'auth/invalid-email':
-                    return '有効なメールアドレスを入力してください。';
-                case 'auth/user-not-found':
-                case 'auth/wrong-password':
-                    return 'メールアドレスまたはパスワードが間違っています。';
-                case 'auth/weak-password':
-                    return 'パスワードは6文字以上で設定してください。';
-                case 'auth/email-already-in-use':
-                    return 'このメールアドレスは既に使用されています。';
-                default:
-                    return '認証中にエラーが発生しました。';
-            }
-        }
-
+      });
     </script>
-</body>
+  </body>
 </html>
