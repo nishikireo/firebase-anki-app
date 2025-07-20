@@ -1,65 +1,118 @@
+/**
+ * main.js
+ * * アプリケーションのエントリーポイント。
+ * Firebaseの初期化、UIの初期化、認証状態の監視、
+ * 各ビューのロジックの初期化とクリーンアップを管理します。
+ */
+
 import { initFirebase } from './firebase.js';
 import { initAuth } from './auth.js';
-import { initUI, ui, showView } from './ui.js';
+import { initUI, ui, showView, toggleModal } from './ui.js';
 import { initDeckView } from './deck.js';
 import { initCardView } from './card.js';
 
-let cleanupDeckView = null; // デッキビューのクリーンアップ関数を保持する変数
-let cleanupCardView = null; // カードビューのクリーンアップ関数を保持する変数
+// 各ビューのイベントリスナーを解除するためのクリーンアップ関数を保持する変数
+let cleanupDeckView = null;
+let cleanupCardView = null;
 
+/**
+ * DOMの読み込みが完了したらアプリケーションを初期化します。
+ */
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        initUI(); // 1. UI要素を取得・初期化
+        // 1. UI要素の参照を初期化
+        initUI();
+        
+        // 2. Firebaseを初期化
         await initFirebase();
         console.log("Firebase initialized successfully.");
 
-        // 2. 認証関連の機能を初期化
+        // 3. モーダルの表示/非表示イベントを設定
+        setupModalEventListeners();
+
+        // 4. 認証機能を初期化し、ログイン/ログアウト時の処理を定義
         initAuth(ui, {
-            // ログイン時に実行される処理
-            onLogin: (user) => {
-                showView('deck-view');
-                // 以前のリスナーが残っていれば解除
-                if (cleanupDeckView) {
-                    cleanupDeckView();
-                }
-                // 新しいユーザーでデッキビューを初期化し、クリーンアップ関数を保存
-                cleanupDeckView = initDeckView(ui, user.uid, {
-                    // デッキがクリックされた時の処理
-                    onDeckClick: (deckId, deckName) => {
-                        showView('card-view');
-                        if (cleanupCardView) cleanupCardView(); // 以前のリスナーを解除
-                        cleanupCardView = initCardView(ui, deckId, deckName);
-                    },
-                    // 削除ボタンがクリックされた時の処理
-                    onDeleteClick: (deckId, deckName) => {
-                        // TODO: デッキ削除機能の実装
-                    }
-                });
-            },
-            // ログアウト時に実行される処理
-            onLogout: () => {
-                showView('auth-view');
-                // リスナーを解除
-                if (cleanupDeckView) {
-                    cleanupDeckView();
-                    cleanupDeckView = null;
-                }
-                // カードビューのリスナーも解除
-                if (cleanupCardView) {
-                    cleanupCardView();
-                    cleanupCardView = null;
-                }
-                // 画面上のデッキリストをクリア
-                ui.deck.list.innerHTML = '';
-                ui.deck.noDecksMessage.classList.remove('hidden');
-            }
+            onLogin: handleLogin,
+            onLogout: handleLogout
         });
+
     } catch (e) {
         console.error("Initialization failed:", e);
-        alert("アプリの初期化に失敗しました。");
+        // ユーザーにエラーを通知するUIをここに実装することも可能
+        document.body.innerHTML = '<div class="text-center p-8 text-red-500">アプリケーションの初期化に失敗しました。ページを再読み込みしてください。</div>';
     }
 
-    // カードビューからデッキビューに戻るボタンの処理
+    // 5. ページナビゲーションのイベントを設定
+    setupNavigationEventListeners();
+});
+
+/**
+ * ログイン成功時の処理
+ * @param {object} user Firebaseのユーザーオブジェクト
+ */
+function handleLogin(user) {
+    showView('deck-view');
+    
+    // 以前のデッキビューのリスナーが残っていれば解除
+    if (cleanupDeckView) cleanupDeckView();
+
+    // 新しいユーザーでデッキビューを初期化し、クリーンアップ関数を受け取る
+    cleanupDeckView = initDeckView(ui, user.uid, {
+        // デッキがクリックされた時のコールバック
+        onDeckClick: (deckId, deckName) => {
+            showView('card-view');
+            if (cleanupCardView) cleanupCardView(); // 以前のカードビューのリスナーを解除
+            cleanupCardView = initCardView(ui, deckId, deckName);
+        },
+        // (将来的に)削除ボタンがクリックされた時のコールバック
+        onDeleteClick: (deckId, deckName) => {
+            console.log(`Delete deck: ${deckName} (${deckId})`);
+            // TODO: デッキ削除確認モーダルを表示し、削除処理を実行
+        }
+    });
+}
+
+/**
+ * ログアウト時の処理
+ */
+function handleLogout() {
+    showView('auth-view');
+    
+    // 全てのビューのリスナーを解除
+    if (cleanupDeckView) {
+        cleanupDeckView();
+        cleanupDeckView = null;
+    }
+    if (cleanupCardView) {
+        cleanupCardView();
+        cleanupCardView = null;
+    }
+    
+    // 表示をリセット
+    ui.deck.list.innerHTML = '';
+    ui.deck.noDecksMessage.classList.remove('hidden');
+}
+
+/**
+ * モーダルを開閉するためのイベントリスナーを設定します。
+ */
+function setupModalEventListeners() {
+    // デッキ追加FABクリック -> デッキ追加モーダル表示
+    ui.deck.addDeckFab.addEventListener('click', () => toggleModal('addDeck', true));
+    // デッキ追加モーダルでキャンセル
+    ui.modals.addDeck.cancelButton.addEventListener('click', () => toggleModal('addDeck', false));
+
+    // カード追加FABクリック -> カード追加モーダル表示
+    ui.card.addCardFab.addEventListener('click', () => toggleModal('addCard', true));
+    // カード追加モーダルでキャンセル
+    ui.modals.addCard.cancelButton.addEventListener('click', () => toggleModal('addCard', false));
+}
+
+/**
+ * ビュー間の「戻る」ナビゲーションのイベントリスナーを設定します。
+ */
+function setupNavigationEventListeners() {
+    // カード一覧画面 -> デッキ一覧画面
     ui.card.backToDecksButton.addEventListener('click', () => {
         showView('deck-view');
         // カードビューのリスナーを解除してメモリリークを防ぐ
@@ -68,4 +121,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             cleanupCardView = null;
         }
     });
-});
+
+    // 学習画面 -> カード一覧画面
+    ui.swipe.backButton.addEventListener('click', () => {
+        // TODO: 学習を中断するか確認するモーダルを挟むのが親切
+        showView('card-view');
+        // TODO: スワイプビューのクリーンアップ処理
+    });
+}

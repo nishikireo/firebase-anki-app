@@ -3,127 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>暗記カードアプリ v2</title>
+    <title>AnkiApp | Modern Flashcards</title>
+    
+    <!-- Google Fonts: Noto Sans JP for better Japanese typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .view { display: none; }
-        .view.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+        /* Use Noto Sans JP as the primary font */
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            -webkit-tap-highlight-color: transparent; /* Disable tap highlight on mobile */
+        }
+
+        /* --- View Transition Animation --- */
+        .view {
+            display: none;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        .view.active {
+            display: block;
+        }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
         }
-        .deck-card, .card-item {
-            transition: transform 0.2s, box-shadow 0.2s;
+
+        /* --- Card Flip Animation --- */
+        .flip-card {
+            perspective: 1000px;
         }
-        .deck-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flip-card.is-flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+            border-radius: 0.75rem; /* 12px */
+        }
+        
+        /* --- Custom Scrollbar --- */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
         }
     </style>
 </head>
 
-<body class="bg-gray-100 text-gray-800">
+<body class="bg-slate-100">
 
-    <!-- 全体コンテナ -->
-    <div id="app-container" class="max-w-md mx-auto min-h-screen bg-white shadow-lg">
+    <!-- App Container -->
+    <div id="app-container" class="max-w-lg mx-auto min-h-screen bg-slate-50 shadow-2xl relative overflow-hidden">
 
-        <!-- ===== 認証画面 ===== -->
-        <div id="auth-view" class="view p-8 active">
-            <div class="text-center mb-12">
-                <i class="fas fa-layer-group text-4xl text-indigo-500"></i>
-                <h1 class="text-3xl font-bold mt-2">Anki App</h1>
-                <p class="text-gray-500">あなたの学習をサポート</p>
-            </div>
-            <div class="flex border-b mb-6">
-                <button id="show-login-tab" class="flex-1 py-2 font-semibold text-indigo-600 border-b-2 border-indigo-600">ログイン</button>
-                <button id="show-signup-tab" class="flex-1 py-2 font-semibold text-gray-500">新規登録</button>
-            </div>
-            <div id="login-form">
-                <div class="mb-4">
-                    <label for="login-email" class="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
-                    <input type="email" id="login-email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="email@example.com">
+        <!-- ===== Auth View ===== -->
+        <div id="auth-view" class="view active">
+            <div class="flex flex-col items-center justify-center h-screen p-8 bg-white">
+                <div class="text-center mb-12">
+                    <i class="fas fa-brain text-5xl text-blue-600"></i>
+                    <h1 class="text-4xl font-bold mt-4 text-slate-800">AnkiApp</h1>
+                    <p class="text-slate-500 mt-1">あなたの記憶を、最大化する。</p>
                 </div>
-                <div class="mb-6">
-                    <label for="login-password" class="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
-                    <input type="password" id="login-password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="********">
+                
+                <!-- Tab Navigation -->
+                <div class="w-full max-w-sm">
+                    <div class="flex border-b-2 border-slate-200 mb-6">
+                        <button id="show-login-tab" class="flex-1 py-3 font-semibold text-blue-600 border-b-2 border-blue-600 transition-all duration-300">ログイン</button>
+                        <button id="show-signup-tab" class="flex-1 py-3 font-semibold text-slate-500 transition-all duration-300">新規登録</button>
+                    </div>
+                    
+                    <!-- Login Form -->
+                    <div id="login-form">
+                        <div class="mb-4">
+                            <label for="login-email" class="block text-sm font-medium text-slate-600 mb-1">メールアドレス</label>
+                            <input type="email" id="login-email" class="w-full px-4 py-3 bg-slate-100 border-2 border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="email@example.com">
+                        </div>
+                        <div class="mb-6">
+                            <label for="login-password" class="block text-sm font-medium text-slate-600 mb-1">パスワード</label>
+                            <input type="password" id="login-password" class="w-full px-4 py-3 bg-slate-100 border-2 border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="********">
+                        </div>
+                        <button id="login-button" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-transform transform hover:scale-105">ログイン</button>
+                    </div>
+
+                    <!-- Signup Form (hidden by default) -->
+                    <div id="signup-form" class="hidden">
+                         <div class="mb-4">
+                            <label for="signup-email" class="block text-sm font-medium text-slate-600 mb-1">メールアドレス</label>
+                            <input type="email" id="signup-email" class="w-full px-4 py-3 bg-slate-100 border-2 border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="email@example.com">
+                        </div>
+                        <div class="mb-6">
+                            <label for="signup-password" class="block text-sm font-medium text-slate-600 mb-1">パスワード</label>
+                            <input type="password" id="signup-password" class="w-full px-4 py-3 bg-slate-100 border-2 border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="6文字以上">
+                        </div>
+                        <button id="signup-button" class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-transform transform hover:scale-105">登録する</button>
+                    </div>
+                    <p id="auth-error" class="text-red-500 text-sm mt-4 text-center h-5"></p>
                 </div>
-                <button id="login-button" class="w-full bg-indigo-600 text-white py-3 rounded-md font-semibold hover:bg-indigo-700 transition">ログイン</button>
             </div>
-            <div id="signup-form" class="hidden">
-                 <div class="mb-4">
-                    <label for="signup-email" class="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
-                    <input type="email" id="signup-email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="email@example.com">
-                </div>
-                <div class="mb-6">
-                    <label for="signup-password" class="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
-                    <input type="password" id="signup-password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="6文字以上">
-                </div>
-                <button id="signup-button" class="w-full bg-green-600 text-white py-3 rounded-md font-semibold hover:bg-green-700 transition">登録する</button>
-            </div>
-            <p id="auth-error" class="text-red-500 text-sm mt-4 text-center"></p>
         </div>
 
-        <!-- ===== デッキ一覧画面 ===== -->
+        <!-- ===== Deck List View ===== -->
         <div id="deck-view" class="view">
-            <header class="flex items-center justify-between p-4 bg-indigo-600 text-white shadow-md">
-                <h1 class="text-xl font-bold">マイデッキ</h1>
-                <button id="logout-button" class="text-white hover:text-indigo-200 transition"><i class="fas fa-sign-out-alt mr-1"></i>ログアウト</button>
+            <header class="flex items-center justify-between p-5 bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-10">
+                <h1 class="text-2xl font-bold text-slate-800">マイデッキ</h1>
+                <button id="logout-button" class="text-slate-500 hover:text-blue-600 transition-colors"><i class="fas fa-sign-out-alt fa-lg"></i></button>
             </header>
-            <main class="p-4 pb-24">
-                <div id="deck-list" class="grid grid-cols-2 gap-4"></div>
-                <div id="no-decks-message" class="hidden text-center py-16">
-                    <i class="fas fa-box-open text-4xl text-gray-400"></i>
-                    <p class="mt-4 text-gray-500">まだデッキがありません。</p>
+            <main class="p-5 pb-28 h-full overflow-y-auto">
+                <div id="deck-list" class="grid grid-cols-2 sm:grid-cols-3 gap-5">
+                    <!-- Deck cards will be inserted here by JavaScript -->
+                </div>
+                <div id="no-decks-message" class="hidden text-center py-24">
+                    <i class="fas fa-box-open text-6xl text-slate-300"></i>
+                    <p class="mt-6 text-slate-500">まだデッキがありません。</p>
+                    <p class="text-sm text-slate-400">下の「+」ボタンから新しいデッキを作成しましょう！</p>
                 </div>
             </main>
-            <footer class="absolute bottom-0 left-0 right-0 p-4 bg-white border-t">
-                <div class="flex items-center">
-                    <input type="text" id="new-deck-name" class="flex-grow px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="新しいデッキ名">
-                    <button id="add-deck-button" class="bg-indigo-600 text-white px-4 py-2 rounded-r-md hover:bg-indigo-700 transition"><i class="fas fa-plus"></i></button>
-                </div>
-            </footer>
+            <!-- Floating Action Button -->
+            <button id="add-deck-fab" class="absolute bottom-6 right-6 bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition-all transform hover:scale-110">
+                <i class="fas fa-plus fa-lg"></i>
+            </button>
         </div>
 
-        <!-- ===== カード一覧画面 ===== -->
+        <!-- ===== Card List View ===== -->
         <div id="card-view" class="view">
-             <header class="flex items-center p-4 bg-indigo-600 text-white shadow-md">
-                <button id="back-to-decks-button" class="text-white mr-4 hover:text-indigo-200 transition"><i class="fas fa-arrow-left"></i></button>
-                <h1 id="card-view-deck-name" class="text-xl font-bold truncate">デッキ名</h1>
+             <header class="flex items-center p-5 bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-10">
+                <button id="back-to-decks-button" class="text-slate-500 mr-4 hover:text-blue-600 transition"><i class="fas fa-arrow-left fa-lg"></i></button>
+                <h1 id="card-view-deck-name" class="text-2xl font-bold text-slate-800 truncate">デッキ名</h1>
+                <button id="start-swipe-button" class="ml-auto bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-blue-600 transition">
+                    <i class="fas fa-play mr-1"></i> 学習開始
+                </button>
             </header>
-            <main class="p-4 pb-32">
-                <div id="card-list" class="space-y-3"></div>
-                <div id="no-cards-message" class="hidden text-center py-16">
-                    <i class="fas fa-clone text-4xl text-gray-400"></i>
-                    <p class="mt-4 text-gray-500">まだカードがありません。</p>
+            <main class="p-5 pb-28 h-full overflow-y-auto">
+                <div id="card-list" class="space-y-4">
+                    <!-- Card items will be inserted here by JavaScript -->
+                </div>
+                <div id="no-cards-message" class="hidden text-center py-24">
+                    <i class="far fa-clone text-6xl text-slate-300"></i>
+                    <p class="mt-6 text-slate-500">まだカードがありません。</p>
+                     <p class="text-sm text-slate-400">下の「+」ボタンからカードを追加しましょう！</p>
                 </div>
             </main>
-            <footer class="absolute bottom-0 left-0 right-0 p-4 bg-white border-t">
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="text" id="new-card-front" class="col-span-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="おもて">
-                    <input type="text" id="new-card-back" class="col-span-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="うら">
-                    <button id="add-card-button" class="col-span-2 w-full bg-indigo-600 text-white py-2 rounded-md font-semibold hover:bg-indigo-700 transition">カードを追加</button>
-                </div>
-            </footer>
+            <!-- Floating Action Button -->
+             <button id="add-card-fab" class="absolute bottom-6 right-6 bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition-all transform hover:scale-110">
+                <i class="fas fa-plus fa-lg"></i>
+            </button>
         </div>
 
+        <!-- ===== Swipe (Training) View ===== -->
+        <div id="swipe-view" class="view bg-slate-200">
+            <header class="flex items-center p-5 bg-white/80 backdrop-blur-sm border-b border-slate-200 z-10">
+                <button id="back-to-cards-button" class="text-slate-500 mr-4 hover:text-blue-600 transition"><i class="fas fa-times fa-lg"></i></button>
+                <h1 class="text-xl font-bold text-slate-800">トレーニング</h1>
+                 <div class="ml-auto text-sm font-semibold text-slate-600">
+                    <span id="swipe-progress-current">1</span> / <span id="swipe-progress-total">10</span>
+                </div>
+            </header>
+            <main class="p-8 flex flex-col justify-center items-center h-[calc(100%-73px)]">
+                <!-- Swipe Card Area -->
+                <div id="swipe-card-container" class="relative w-full h-3/5 max-w-sm max-h-96 mb-8">
+                    <!-- This is where swipeable cards will be dynamically added -->
+                </div>
+                <!-- Action Buttons -->
+                <div class="flex justify-around w-full max-w-xs">
+                    <button id="swipe-forgot-button" class="bg-white text-red-500 w-20 h-20 rounded-full shadow-lg flex items-center justify-center transition-transform transform hover:scale-110">
+                        <i class="fas fa-times fa-2x"></i>
+                    </button>
+                    <button id="swipe-remembered-button" class="bg-white text-green-500 w-20 h-20 rounded-full shadow-lg flex items-center justify-center transition-transform transform hover:scale-110">
+                        <i class="fas fa-check fa-2x"></i>
+                    </button>
+                </div>
+            </main>
+        </div>
     </div>
 
-    <!-- ===== スワイプモード画面 ===== -->
-    <div id="swipe-view" class="view">
-        <header class="flex items-center p-4 bg-indigo-600 text-white shadow-md">
-            <button id="back-to-cards-button" class="text-white mr-4 hover:text-indigo-200 transition"><i class="fas fa-arrow-left"></i></button>
-            <h1 class="text-xl font-bold">暗記トレーニング</h1>
-        </header>
-        <main class="p-4 flex justify-center items-center h-[calc(100vh-64px)]">
-            <div id="swipe-card" class="relative w-80 h-48 bg-white rounded-lg shadow-lg border border-gray-300 flex justify-center items-center text-xl font-semibold text-gray-800">
-                表示中カード
+    <!-- ===== Modals ===== -->
+    <!-- Add Deck Modal -->
+    <div id="add-deck-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-8 m-4 w-full max-w-sm">
+            <h2 class="text-2xl font-bold text-slate-800 mb-4">新しいデッキを作成</h2>
+            <input type="text" id="new-deck-name" class="w-full px-4 py-3 bg-slate-100 border-2 border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-6" placeholder="デッキ名を入力">
+            <div class="flex justify-end space-x-3">
+                <button id="cancel-add-deck" class="px-6 py-2 rounded-lg text-slate-600 hover:bg-slate-100 transition">キャンセル</button>
+                <button id="confirm-add-deck" class="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition">作成</button>
             </div>
-        </main>
+        </div>
     </div>
+
+    <!-- Add Card Modal -->
+    <div id="add-card-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-8 m-4 w-full max-w-sm">
+            <h2 class="text-2xl font-bold text-slate-800 mb-6">新しいカードを追加</h2>
+            <div class="space-y-4">
+                <textarea id="new-card-front" class="w-full px-4 py-3 bg-slate-100 border-2 border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="おもて (問題)" rows="3"></textarea>
+                <textarea id="new-card-back" class="w-full px-4 py-3 bg-slate-100 border-2 border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="うら (答え)" rows="3"></textarea>
+            </div>
+            <div class="flex justify-end space-x-3 mt-8">
+                <button id="cancel-add-card" class="px-6 py-2 rounded-lg text-slate-600 hover:bg-slate-100 transition">キャンセル</button>
+                <button id="confirm-add-card" class="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition">追加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript modules will be loaded here -->
+    <script type="module" src="/js/main.js"></script>
 </body>
-</div>
-<script type="module" src="/js/main.js"></script>
 </html>
