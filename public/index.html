@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AnkiApp | Modern Flashcards</title>
     
-    <!-- Google Fonts: Noto Sans JP for better Japanese typography -->
+    <!-- Google Fonts: Noto Sans JP -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
@@ -17,13 +17,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
-        /* Use Noto Sans JP as the primary font */
         body {
             font-family: 'Noto Sans JP', sans-serif;
-            -webkit-tap-highlight-color: transparent; /* Disable tap highlight on mobile */
+            -webkit-tap-highlight-color: transparent;
         }
-
-        /* --- View Transition Animation --- */
         .view {
             display: none;
             position: absolute;
@@ -40,8 +37,6 @@
             from { opacity: 0; transform: scale(0.98); }
             to { opacity: 1; transform: scale(1); }
         }
-
-        /* --- Card Flip Animation --- */
         .flip-card {
             perspective: 1000px;
         }
@@ -65,30 +60,22 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 1.5rem;
-            border-radius: 0.75rem; /* 12px */
+            padding: 1rem;
+            border-radius: 0.75rem;
         }
-        
-        /* --- Custom Scrollbar --- */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        #gallery-modal-content {
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
         }
     </style>
 </head>
 
 <body class="bg-slate-100">
 
-    <!-- App Container -->
     <div id="app-container" class="max-w-lg mx-auto min-h-screen bg-slate-50 shadow-2xl relative overflow-hidden">
 
         <!-- ===== Auth View ===== -->
@@ -100,14 +87,12 @@
                     <p class="text-slate-500 mt-1">あなたの記憶を、最大化する。</p>
                 </div>
                 
-                <!-- Tab Navigation -->
                 <div class="w-full max-w-sm">
                     <div class="flex border-b-2 border-slate-200 mb-6">
                         <button id="show-login-tab" class="flex-1 py-3 font-semibold text-blue-600 border-b-2 border-blue-600 transition-all duration-300">ログイン</button>
                         <button id="show-signup-tab" class="flex-1 py-3 font-semibold text-slate-500 transition-all duration-300">新規登録</button>
                     </div>
                     
-                    <!-- Login Form -->
                     <div id="login-form">
                         <div class="mb-4">
                             <label for="login-email" class="block text-sm font-medium text-slate-600 mb-1">メールアドレス</label>
@@ -120,7 +105,6 @@
                         <button id="login-button" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-transform transform hover:scale-105">ログイン</button>
                     </div>
 
-                    <!-- Signup Form (hidden by default) -->
                     <div id="signup-form" class="hidden">
                          <div class="mb-4">
                             <label for="signup-email" class="block text-sm font-medium text-slate-600 mb-1">メールアドレス</label>
@@ -144,16 +128,13 @@
                 <button id="logout-button" class="text-slate-500 hover:text-blue-600 transition-colors"><i class="fas fa-sign-out-alt fa-lg"></i></button>
             </header>
             <main class="p-5 pb-28 h-full overflow-y-auto">
-                <div id="deck-list" class="grid grid-cols-2 sm:grid-cols-3 gap-5">
-                    <!-- Deck cards will be inserted here by JavaScript -->
-                </div>
+                <div id="deck-list" class="grid grid-cols-2 sm:grid-cols-3 gap-5"></div>
                 <div id="no-decks-message" class="hidden text-center py-24">
                     <i class="fas fa-box-open text-6xl text-slate-300"></i>
                     <p class="mt-6 text-slate-500">まだデッキがありません。</p>
                     <p class="text-sm text-slate-400">下の「+」ボタンから新しいデッキを作成しましょう！</p>
                 </div>
             </main>
-            <!-- Floating Action Button -->
             <button id="add-deck-fab" class="absolute bottom-6 right-6 bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition-all transform hover:scale-110">
                 <i class="fas fa-plus fa-lg"></i>
             </button>
@@ -164,22 +145,24 @@
              <header class="flex items-center p-5 bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-10">
                 <button id="back-to-decks-button" class="text-slate-500 mr-4 hover:text-blue-600 transition"><i class="fas fa-arrow-left fa-lg"></i></button>
                 <h1 id="card-view-deck-name" class="text-2xl font-bold text-slate-800 truncate">デッキ名</h1>
-                <button id="start-swipe-button" class="ml-auto bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-blue-600 transition">
-                    <i class="fas fa-play mr-1"></i> 学習開始
-                </button>
+                <div class="ml-auto flex items-center space-x-2">
+                    <button id="toggle-gallery-button" class="text-slate-500 hover:text-blue-600 transition p-2 rounded-lg">
+                        <i class="fas fa-th-large fa-lg"></i>
+                    </button>
+                    <button id="start-swipe-button" class="bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-blue-600 transition">
+                        <i class="fas fa-play mr-1"></i> 学習開始
+                    </button>
+                </div>
             </header>
             <main class="p-5 pb-28 h-full overflow-y-auto">
-                <div id="card-list" class="space-y-4">
-                    <!-- Card items will be inserted here by JavaScript -->
-                </div>
+                <div id="card-list" class="space-y-4"></div>
                 <div id="no-cards-message" class="hidden text-center py-24">
                     <i class="far fa-clone text-6xl text-slate-300"></i>
                     <p class="mt-6 text-slate-500">まだカードがありません。</p>
                      <p class="text-sm text-slate-400">下の「+」ボタンからカードを追加しましょう！</p>
                 </div>
             </main>
-            <!-- Floating Action Button -->
-             <button id="add-card-fab" class="absolute bottom-6 right-6 bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition-all transform hover:scale-110">
+            <button id="add-card-fab" class="absolute bottom-6 right-6 bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition-all transform hover:scale-110">
                 <i class="fas fa-plus fa-lg"></i>
             </button>
         </div>
@@ -194,11 +177,7 @@
                 </div>
             </header>
             <main class="p-8 flex flex-col justify-center items-center h-[calc(100%-73px)]">
-                <!-- Swipe Card Area -->
-                <div id="swipe-card-container" class="relative w-full h-3/5 max-w-sm max-h-96 mb-8">
-                    <!-- This is where swipeable cards will be dynamically added -->
-                </div>
-                <!-- Action Buttons -->
+                <div id="swipe-card-container" class="relative w-full h-3/5 max-w-sm max-h-96 mb-8"></div>
                 <div class="flex justify-around w-full max-w-xs">
                     <button id="swipe-forgot-button" class="bg-white text-red-500 w-20 h-20 rounded-full shadow-lg flex items-center justify-center transition-transform transform hover:scale-110">
                         <i class="fas fa-times fa-2x"></i>
@@ -209,10 +188,25 @@
                 </div>
             </main>
         </div>
+
+        <!-- ===== Gallery View ===== -->
+        <div id="gallery-view" class="view">
+            <header class="flex items-center p-5 bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-10">
+                <button id="back-to-cards-from-gallery" class="text-slate-500 mr-4 hover:text-blue-600 transition"><i class="fas fa-arrow-left fa-lg"></i></button>
+                <h1 class="text-2xl font-bold text-slate-800">ギャラリー</h1>
+                <div class="ml-auto flex items-center space-x-2 text-slate-500">
+                    <i class="fas fa-search-minus"></i>
+                    <input id="gallery-zoom-slider" type="range" min="2" max="5" value="3" class="w-24">
+                    <i class="fas fa-search-plus"></i>
+                </div>
+            </header>
+            <main class="p-5 pb-28 h-full overflow-y-auto">
+                <div id="gallery-grid" class="grid gap-4 transition-all duration-300"></div>
+            </main>
+        </div>
     </div>
 
     <!-- ===== Modals ===== -->
-    <!-- Add Deck Modal -->
     <div id="add-deck-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
         <div class="bg-white rounded-xl shadow-2xl p-8 m-4 w-full max-w-sm">
             <h2 class="text-2xl font-bold text-slate-800 mb-4">新しいデッキを作成</h2>
@@ -224,14 +218,30 @@
         </div>
     </div>
 
-    <!-- Add Card Modal -->
     <div id="add-card-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
         <div class="bg-white rounded-xl shadow-2xl p-8 m-4 w-full max-w-sm">
             <h2 class="text-2xl font-bold text-slate-800 mb-6">新しいカードを追加</h2>
-            <div class="space-y-4">
-                <textarea id="new-card-front" class="w-full px-4 py-3 bg-slate-100 border-2 border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="おもて (問題)" rows="3"></textarea>
-                <textarea id="new-card-back" class="w-full px-4 py-3 bg-slate-100 border-2 border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="うら (答え)" rows="3"></textarea>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-slate-600 mb-2">おもて</label>
+                <textarea id="new-card-front" class="w-full px-4 py-3 bg-slate-100 border-2 border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="テキスト (任意)" rows="2"></textarea>
+                <div class="mt-2">
+                    <label for="front-image-input" class="cursor-pointer text-sm text-blue-600 hover:underline"><i class="fas fa-image mr-1"></i>画像を選択...</label>
+                    <input type="file" id="front-image-input" class="hidden" accept="image/*">
+                    <div id="front-image-preview" class="mt-2 hidden"></div>
+                </div>
             </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-slate-600 mb-2">うら</label>
+                <textarea id="new-card-back" class="w-full px-4 py-3 bg-slate-100 border-2 border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="テキスト (任意)" rows="2"></textarea>
+                <div class="mt-2">
+                    <label for="back-image-input" class="cursor-pointer text-sm text-blue-600 hover:underline"><i class="fas fa-image mr-1"></i>画像を選択...</label>
+                    <input type="file" id="back-image-input" class="hidden" accept="image/*">
+                    <div id="back-image-preview" class="mt-2 hidden"></div>
+                </div>
+            </div>
+
             <div class="flex justify-end space-x-3 mt-8">
                 <button id="cancel-add-card" class="px-6 py-2 rounded-lg text-slate-600 hover:bg-slate-100 transition">キャンセル</button>
                 <button id="confirm-add-card" class="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition">追加</button>
@@ -239,7 +249,10 @@
         </div>
     </div>
 
-    <!-- JavaScript modules will be loaded here -->
-    <script type="module" src="/js/main.js"></script>
+    <div id="gallery-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden p-4">
+        <div id="gallery-modal-content" class="relative w-full max-w-md h-auto transform scale-95 opacity-0"></div>
+    </div>
+
+    <script type="module" src="./main.js"></script>
 </body>
 </html>

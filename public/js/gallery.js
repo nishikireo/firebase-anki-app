@@ -3,15 +3,8 @@
  * * ギャラリービューの表示とインタラクションを管理します。
  */
 
-// --- State Management ---
 let state = {};
 
-/**
- * ギャラリービューを初期化します。
- * @param {object} ui - UI要素のオブジェクト
- * @param {Array<object>} cards - 表示するカードの配列
- * @returns {Function} クリーンアップ関数
- */
 export const initGalleryView = (ui, cards) => {
     state = {
         ui,
@@ -22,7 +15,6 @@ export const initGalleryView = (ui, cards) => {
     renderGallery();
     updateGridColumns(ui.gallery.zoomSlider.value);
 
-    // --- Event Listeners ---
     const zoomHandler = (e) => updateGridColumns(e.target.value);
     const gridClickHandler = (e) => handleGridClick(e);
     const gridPressHandler = (e) => handleGridPress(e);
@@ -30,7 +22,6 @@ export const initGalleryView = (ui, cards) => {
 
     ui.gallery.zoomSlider.addEventListener('input', zoomHandler);
     ui.gallery.grid.addEventListener('click', gridClickHandler);
-    // Mouse and Touch events for long-press
     ui.gallery.grid.addEventListener('mousedown', gridPressHandler);
     ui.gallery.grid.addEventListener('mouseup', clearLongPressTimer);
     ui.gallery.grid.addEventListener('mouseleave', clearLongPressTimer);
@@ -39,8 +30,6 @@ export const initGalleryView = (ui, cards) => {
     
     ui.modals.gallery.modal.addEventListener('click', modalClickHandler);
 
-
-    // クリーンアップ関数
     return () => {
         ui.gallery.zoomSlider.removeEventListener('input', zoomHandler);
         ui.gallery.grid.removeEventListener('click', gridClickHandler);
@@ -53,9 +42,6 @@ export const initGalleryView = (ui, cards) => {
     };
 };
 
-/**
- * ギャラリーにカードを描画します。
- */
 function renderGallery() {
     state.ui.gallery.grid.innerHTML = '';
     state.cards.forEach(card => {
@@ -64,63 +50,60 @@ function renderGallery() {
     });
 }
 
-/**
- * ギャラリー表示用のカード要素を生成します。
- * @param {object} card - カードデータ
- * @returns {HTMLElement}
- */
+const createGalleryFaceContent = (text, imageUrl, size = 'sm') => {
+    const textSize = size === 'sm' ? 'text-sm' : 'text-3xl';
+    const textHtml = text ? `<p class="${textSize} break-words mt-2">${text}</p>` : '';
+    const imageHtml = imageUrl ? `<img src="${imageUrl}" class="max-h-full max-w-full object-contain rounded-md" alt="カード画像" loading="lazy">` : '';
+    
+    if (imageUrl && textHtml) {
+        return `<div class="flex flex-col items-center justify-center h-full w-full p-1">${imageHtml}${textHtml}</div>`;
+    }
+    return imageHtml || (text ? `<p class="${textSize} break-words">${text}</p>` : '');
+};
+
 function createGalleryCardElement(card) {
     const div = document.createElement('div');
-    div.className = 'flip-card aspect-[3/4]'; // 縦長のカード比率
+    div.className = 'flip-card aspect-[3/4]';
     div.dataset.cardId = card.id;
+
+    const frontContent = createGalleryFaceContent(card.frontText, card.frontImageURL, 'sm');
+    const backContent = createGalleryFaceContent(card.backText, card.backImageURL, 'sm');
+
     div.innerHTML = `
         <div class="flip-card-inner rounded-lg shadow-md">
-            <div class="flip-card-front bg-white border border-slate-200 text-slate-700 text-center p-2">
-                <p class="text-sm md:text-base">${card.front}</p>
+            <div class="flip-card-front bg-white border border-slate-200 text-slate-700 text-center p-2 flex items-center justify-center">
+                ${frontContent || '<span class="text-slate-400 text-xs">内容なし</span>'}
             </div>
-            <div class="flip-card-back bg-slate-700 text-white text-center p-2">
-                <p class="text-sm md:text-base font-semibold">${card.back}</p>
+            <div class="flip-card-back bg-slate-700 text-white text-center p-2 flex items-center justify-center">
+                ${backContent || '<span class="text-slate-400 text-xs">内容なし</span>'}
             </div>
         </div>
     `;
     return div;
 }
 
-/**
- * グリッドの列数を更新します。
- * @param {string | number} count - 列数
- */
 function updateGridColumns(count) {
     const grid = state.ui.gallery.grid;
-    // 既存のgrid-cols-*クラスをすべて削除
     grid.className = grid.className.replace(/grid-cols-\d+/g, '');
     grid.classList.add(`grid-cols-${count}`);
 }
 
-/**
- * カードのクリックイベント（フリップ）を処理します。
- * @param {Event} e 
- */
 function handleGridClick(e) {
-    clearLongPressTimer(); // 長押し判定をキャンセル
+    clearLongPressTimer();
     const cardElement = e.target.closest('.flip-card');
     if (cardElement) {
         cardElement.classList.toggle('is-flipped');
     }
 }
 
-/**
- * カードの長押しイベントを処理します。
- * @param {Event} e 
- */
 function handleGridPress(e) {
-    clearLongPressTimer(); // 既存のタイマーをクリア
+    clearLongPressTimer();
     const cardElement = e.target.closest('.flip-card');
     if (cardElement) {
         state.longPressTimer = setTimeout(() => {
-            e.preventDefault(); // クリックイベントの発火を防ぐ
+            e.preventDefault();
             showEnlargedCard(cardElement.dataset.cardId);
-        }, 500); // 500msで長押しと判定
+        }, 500);
     }
 }
 
@@ -131,39 +114,34 @@ function clearLongPressTimer() {
     }
 }
 
-/**
- * 拡大カードをモーダルに表示します。
- * @param {string} cardId 
- */
 function showEnlargedCard(cardId) {
     const cardData = state.cards.find(c => c.id === cardId);
     if (!cardData) return;
 
     const modalContent = state.ui.modals.gallery.content;
+    const frontContent = createGalleryFaceContent(cardData.frontText, cardData.frontImageURL, 'lg');
+    const backContent = createGalleryFaceContent(cardData.backText, cardData.backImageURL, 'lg');
+
     modalContent.innerHTML = `
         <div class="flip-card aspect-[3/4]">
             <div class="flip-card-inner rounded-xl shadow-2xl">
-                <div class="flip-card-front bg-white border-4 border-yellow-300 text-slate-800">
-                    <p class="text-3xl p-8">${cardData.front}</p>
+                <div class="flip-card-front bg-white border-4 border-yellow-300 text-slate-800 p-4 flex items-center justify-center">
+                    ${frontContent || '<span class="text-slate-400">内容がありません</span>'}
                 </div>
-                <div class="flip-card-back bg-blue-600 border-4 border-yellow-300 text-white">
-                    <p class="text-3xl font-bold p-8">${cardData.back}</p>
+                <div class="flip-card-back bg-blue-600 border-4 border-yellow-300 text-white p-4 flex items-center justify-center">
+                    ${backContent || '<span class="text-slate-400">内容がありません</span>'}
                 </div>
             </div>
         </div>
     `;
     
     state.ui.modals.gallery.modal.classList.remove('hidden');
-    // 表示アニメーション
     setTimeout(() => {
         modalContent.classList.remove('scale-95', 'opacity-0');
         modalContent.classList.add('scale-100', 'opacity-100');
     }, 10);
 }
 
-/**
- * 拡大カードモーダルを非表示にします。
- */
 function hideEnlargedCard() {
     const modal = state.ui.modals.gallery.modal;
     const modalContent = state.ui.modals.gallery.content;
@@ -171,7 +149,6 @@ function hideEnlargedCard() {
     modalContent.classList.remove('scale-100', 'opacity-100');
     modalContent.classList.add('scale-95', 'opacity-0');
 
-    // トランジションが終わってから非表示にする
     setTimeout(() => {
         modal.classList.add('hidden');
         modalContent.innerHTML = '';

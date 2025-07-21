@@ -6,8 +6,15 @@
 
 export let ui = {};
 
+/**
+ * UI要素をDOMから取得し、uiオブジェクトに格納します。
+ * アプリケーション起動時に一度だけ呼び出されます。
+ */
 export const initUI = () => {
-    // ... (Auth, Deck Views - 変更なし) ...
+    // ===== Views =====
+    ui.views = document.querySelectorAll('.view');
+
+    // ===== Auth View =====
     ui.auth = {
         view: document.getElementById('auth-view'),
         loginForm: document.getElementById('login-form'),
@@ -18,6 +25,8 @@ export const initUI = () => {
         signupButton: document.getElementById('signup-button'),
         error: document.getElementById('auth-error'),
     };
+
+    // ===== Deck View =====
     ui.deck = {
         view: document.getElementById('deck-view'),
         list: document.getElementById('deck-list'),
@@ -34,7 +43,7 @@ export const initUI = () => {
         noCardsMessage: document.getElementById('no-cards-message'),
         backToDecksButton: document.getElementById('back-to-decks-button'),
         startSwipeButton: document.getElementById('start-swipe-button'),
-        toggleGalleryButton: document.getElementById('toggle-gallery-button'), // 追加
+        toggleGalleryButton: document.getElementById('toggle-gallery-button'),
         addCardFab: document.getElementById('add-card-fab'),
     };
     
@@ -69,23 +78,50 @@ export const initUI = () => {
             modal: document.getElementById('add-card-modal'),
             frontInput: document.getElementById('new-card-front'),
             backInput: document.getElementById('new-card-back'),
+            frontImageInput: document.getElementById('front-image-input'),
+            backImageInput: document.getElementById('back-image-input'),
+            frontImagePreview: document.getElementById('front-image-preview'),
+            backImagePreview: document.getElementById('back-image-preview'),
             confirmButton: document.getElementById('confirm-add-card'),
             cancelButton: document.getElementById('cancel-add-card'),
         },
-        gallery: { // 追加
+        gallery: {
             modal: document.getElementById('gallery-modal'),
             content: document.getElementById('gallery-modal-content'),
         }
     };
 };
 
-// ... (showView, toggleModal - 変更なし) ...
+/**
+ * 指定されたIDのビューを表示し、他を非表示にします。
+ * @param {string} viewId 表示するビューのID
+ */
 export const showView = (viewId) => {
-    document.querySelectorAll('.view').forEach(view => {
+    ui.views.forEach(view => {
         view.classList.toggle('active', view.id === viewId);
     });
 };
 
+/**
+ * カード追加モーダルの入力内容とプレビューをリセットします。
+ */
+const resetAddCardModal = () => {
+    const { frontInput, backInput, frontImageInput, backImageInput, frontImagePreview, backImagePreview } = ui.modals.addCard;
+    frontInput.value = '';
+    backInput.value = '';
+    frontImageInput.value = '';
+    backImageInput.value = '';
+    frontImagePreview.innerHTML = '';
+    backImagePreview.innerHTML = '';
+    frontImagePreview.classList.add('hidden');
+    backImagePreview.classList.add('hidden');
+};
+
+/**
+ * 指定されたモーダルの表示/非表示を切り替えます。
+ * @param {'addDeck' | 'addCard'} modalName 操作するモーダルの名前
+ * @param {boolean} show 表示する場合はtrue、非表示にする場合はfalse
+ */
 export const toggleModal = (modalName, show) => {
     const modalElement = ui.modals[modalName]?.modal;
     if (!modalElement) return;
@@ -94,5 +130,8 @@ export const toggleModal = (modalName, show) => {
         modalElement.classList.remove('hidden');
     } else {
         modalElement.classList.add('hidden');
+        if (modalName === 'addCard') {
+            resetAddCardModal();
+        }
     }
 };
