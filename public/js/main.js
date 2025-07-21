@@ -17,17 +17,24 @@ let cleanupCardView = null;
 let cleanupSwipeView = null;
 let cleanupGalleryView = null; // ギャラリービュー用を追加
 
-document.addEventListener('DOMContentLoaded', async () => {
+// DOMの読み込みが完了したら、アプリケーションの初期化を開始します。
+document.addEventListener('DOMContentLoaded', () => {
     try {
+        // 1. UI要素の参照を初期化
         initUI();
-        await initFirebase();
+        // 2. Firebaseサービスを初期化
+        initFirebase();
+        // 3. モーダル関連のイベントリスナーを設定
         setupModalEventListeners();
-        initAuth(ui, { onLogin: handleLogin, onLogout: handleLogout });
+        // 4. 認証関連の処理を初期化し、ログイン・ログアウト時のコールバックを渡す
+        initAuth({ onLogin: handleLogin, onLogout: handleLogout });
+        // 5. ビュー間の画面遷移イベントリスナーを設定
+        setupNavigationEventListeners();
     } catch (e) {
+        // 初期化中にエラーが発生した場合、コンソールにログを出力します。
+        // エラーメッセージの表示は initFirebase 内で行われます。
         console.error("Initialization failed:", e);
-        document.body.innerHTML = '<div class="text-center p-8 text-red-500">アプリ初期化エラー</div>';
     }
-    setupNavigationEventListeners();
 });
 
 function handleLogin(user) {

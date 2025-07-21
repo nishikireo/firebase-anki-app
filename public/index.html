@@ -16,62 +16,9 @@
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <style>
-        body {
-            font-family: 'Noto Sans JP', sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .view {
-            display: none;
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            animation: fadeIn 0.4s ease-in-out;
-        }
-        .view.active {
-            display: block;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.98); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        .flip-card {
-            perspective: 1000px;
-        }
-        .flip-card-inner {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            transition: transform 0.6s;
-            transform-style: preserve-3d;
-        }
-        .flip-card.is-flipped .flip-card-inner {
-            transform: rotateY(180deg);
-        }
-        .flip-card-front, .flip-card-back {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            -webkit-backface-visibility: hidden;
-            backface-visibility: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 1rem;
-            border-radius: 0.75rem;
-        }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
 
-        #gallery-modal-content {
-            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
-        }
-    </style>
 </head>
 
 <body class="bg-slate-100">
@@ -116,6 +63,17 @@
                         </div>
                         <button id="signup-button" class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-transform transform hover:scale-105">登録する</button>
                     </div>
+
+                    <div class="my-6 flex items-center">
+                        <div class="flex-grow border-t border-slate-300"></div>
+                        <span class="flex-shrink mx-4 text-slate-400 text-sm">または</span>
+                        <div class="flex-grow border-t border-slate-300"></div>
+                    </div>
+
+                    <button id="google-signin-button" class="w-full bg-white border-2 border-slate-300 text-slate-700 py-3 rounded-lg font-semibold hover:bg-slate-100 transition flex items-center justify-center">
+                        <i class="fab fa-google text-red-500 mr-3"></i>
+                        Googleでログイン
+                    </button>
                     <p id="auth-error" class="text-red-500 text-sm mt-4 text-center h-5"></p>
                 </div>
             </div>
@@ -144,13 +102,17 @@
         <div id="card-view" class="view">
              <header class="flex items-center p-5 bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-10">
                 <button id="back-to-decks-button" class="text-slate-500 mr-4 hover:text-blue-600 transition"><i class="fas fa-arrow-left fa-lg"></i></button>
-                <h1 id="card-view-deck-name" class="text-2xl font-bold text-slate-800 truncate">デッキ名</h1>
+                <h1 id="card-view-deck-name" class="text-xl font-bold text-slate-800 truncate"></h1>
                 <div class="ml-auto flex items-center space-x-2">
+                    <div class="relative">
+                        <input type="search" id="card-search-input" placeholder="検索..." class="w-32 sm:w-40 pl-8 pr-2 py-1.5 rounded-lg bg-slate-100 border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                        <i class="fas fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    </div>
                     <button id="toggle-gallery-button" class="text-slate-500 hover:text-blue-600 transition p-2 rounded-lg">
                         <i class="fas fa-th-large fa-lg"></i>
                     </button>
                     <button id="start-swipe-button" class="bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-blue-600 transition">
-                        <i class="fas fa-play mr-1"></i> 学習開始
+                        <i class="fas fa-play mr-1"></i> 学習
                     </button>
                 </div>
             </header>
@@ -193,11 +155,17 @@
         <div id="gallery-view" class="view">
             <header class="flex items-center p-5 bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-10">
                 <button id="back-to-cards-from-gallery" class="text-slate-500 mr-4 hover:text-blue-600 transition"><i class="fas fa-arrow-left fa-lg"></i></button>
-                <h1 class="text-2xl font-bold text-slate-800">ギャラリー</h1>
-                <div class="ml-auto flex items-center space-x-2 text-slate-500">
-                    <i class="fas fa-search-minus"></i>
-                    <input id="gallery-zoom-slider" type="range" min="2" max="5" value="3" class="w-24">
-                    <i class="fas fa-search-plus"></i>
+                <h1 class="text-xl font-bold text-slate-800">ギャラリー</h1>
+                <div class="ml-auto flex items-center space-x-2 sm:space-x-4">
+                    <div class="relative">
+                        <input type="search" id="gallery-search-input" placeholder="検索..." class="w-32 sm:w-40 pl-8 pr-2 py-1.5 rounded-lg bg-slate-100 border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                        <i class="fas fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    </div>
+                    <div class="hidden sm:flex items-center space-x-2 text-slate-500">
+                        <i class="fas fa-search-minus"></i>
+                        <input id="gallery-zoom-slider" type="range" min="2" max="5" value="3" class="w-24">
+                        <i class="fas fa-search-plus"></i>
+                    </div>
                 </div>
             </header>
             <main class="p-5 pb-28 h-full overflow-y-auto">

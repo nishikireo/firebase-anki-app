@@ -7,12 +7,6 @@ import { collection, addDoc, query, onSnapshot, serverTimestamp, orderBy, doc, d
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 import { toggleModal } from './ui.js';
 
-/**
- * カードの表面または裏面のコンテンツ（テキストや画像）を生成します。
- * @param {string} text - テキストコンテンツ
- * @param {string} imageUrl - 画像のURL
- * @returns {string} - コンテンツのHTML文字列
- */
 const createCardFaceContent = (text, imageUrl) => {
     const textHtml = text ? `<p class="text-xl break-words">${text}</p>` : '';
     const imageHtml = imageUrl ? `<img src="${imageUrl}" class="max-h-32 max-w-full object-contain rounded-md my-2" alt="カード画像" loading="lazy">` : '';
@@ -23,11 +17,6 @@ const createCardFaceContent = (text, imageUrl) => {
     return imageHtml || textHtml;
 };
 
-/**
- * 単一のカード要素（フリップ機能付き）を生成します。
- * @param {object} card - カードのデータ
- * @returns {HTMLElement} 生成されたカードのHTML要素
- */
 const createCardElement = (card) => {
     const div = document.createElement('div');
     div.className = 'flip-card h-48';
@@ -52,11 +41,6 @@ const createCardElement = (card) => {
     return div;
 };
 
-/**
- * カード一覧を画面に描画します。
- * @param {object} ui - UI要素のオブジェクト
- * @param {Array<object>} cards - 描画するカードの配列
- */
 const renderCards = (ui, cards) => {
     ui.card.list.innerHTML = '';
     if (cards.length === 0) {
@@ -69,12 +53,6 @@ const renderCards = (ui, cards) => {
     }
 };
 
-/**
- * 画像ファイルをFirebase Storageにアップロードします。
- * @param {File} file - アップロードする画像ファイル
- * @param {string} deckId - カードが所属するデッキのID
- * @returns {Promise<string|null>} アップロードされた画像のURL、またはファイルがない場合はnull
- */
 const uploadImage = async (file, deckId) => {
     if (!file) return null;
     const filePath = `cards/${deckId}/${Date.now()}-${file.name}`;
@@ -83,11 +61,6 @@ const uploadImage = async (file, deckId) => {
     return await getDownloadURL(storageRef);
 };
 
-/**
- * 新しいカードをFirestoreに追加します。
- * @param {object} ui - UI要素のオブジェクト
- * @param {string} deckId - カードを追加するデッキのID
- */
 const addCard = async (ui, deckId) => {
     const frontText = ui.modals.addCard.frontInput.value.trim();
     const backText = ui.modals.addCard.backInput.value.trim();
@@ -128,10 +101,6 @@ const addCard = async (ui, deckId) => {
     }
 };
 
-/**
- * URLを指定してFirebase Storageから画像を削除します。
- * @param {string} imageUrl - 削除する画像のURL
- */
 const deleteImage = async (imageUrl) => {
     if (!imageUrl) return;
     try {
@@ -144,11 +113,6 @@ const deleteImage = async (imageUrl) => {
     }
 };
 
-/**
- * 指定されたカードと、それに関連する画像を削除します。
- * @param {string} deckId - カードが所属するデッキのID
- * @param {string} cardId - 削除するカードのID
- */
 const deleteCard = async (deckId, cardId) => {
     if (!confirm('このカードを本当に削除しますか？')) return;
     try {
@@ -169,11 +133,6 @@ const deleteCard = async (deckId, cardId) => {
     }
 };
 
-/**
- * モーダル内で選択された画像のプレビューを表示します。
- * @param {Event} e - file inputのchangeイベント
- * @param {HTMLElement} previewElement - プレビューを表示する要素
- */
 const showImagePreview = (e, previewElement) => {
     const file = e.target.files[0];
     if (file) {
@@ -199,18 +158,37 @@ const showImagePreview = (e, previewElement) => {
  */
 export const initCardView = (ui, deckId, deckName, { onStartSwipe, onShowGallery }) => {
     ui.card.deckNameTitle.textContent = deckName;
-    let currentCards = [];
+    let allCards = [];
+    let filteredCards = [];
 
     const cardsCollectionRef = collection(db, 'decks', deckId, 'cards');
     const q = query(cardsCollectionRef, orderBy("createdAt", "desc"));
 
     const cardsUnsubscribe = onSnapshot(q, (querySnapshot) => {
-        currentCards = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderCards(ui, currentCards);
+        allCards = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const searchTerm = ui.card.searchInput.value.toLowerCase();
+        filterAndRender(searchTerm);
     }, (error) => {
         console.error("Error fetching cards: ", error);
         alert('カードの取得に失敗しました。');
     });
+
+    const filterAndRender = (searchTerm) => {
+        if (!searchTerm) {
+            filteredCards = [...allCards];
+        } else {
+            filteredCards = allCards.filter(card => {
+                const front = card.frontText?.toLowerCase() || '';
+                const back = card.backText?.toLowerCase() || '';
+                return front.includes(searchTerm) || back.includes(searchTerm);
+            });
+        }
+        renderCards(ui, filteredCards);
+    };
+
+    const searchHandler = (e) => {
+        filterAndRender(e.target.value.toLowerCase());
+    };
 
     const addCardHandler = () => addCard(ui, deckId);
     const cardListClickHandler = (e) => {
@@ -224,12 +202,13 @@ export const initCardView = (ui, deckId, deckName, { onStartSwipe, onShowGallery
         if (card) card.classList.toggle('is-flipped');
     };
     
-    const startSwipeHandler = () => onStartSwipe(currentCards);
-    const showGalleryHandler = () => onShowGallery(currentCards);
+    const startSwipeHandler = () => onStartSwipe(filteredCards);
+    const showGalleryHandler = () => onShowGallery(filteredCards);
 
     const frontPreviewHandler = (e) => showImagePreview(e, ui.modals.addCard.frontImagePreview);
     const backPreviewHandler = (e) => showImagePreview(e, ui.modals.addCard.backImagePreview);
 
+    ui.card.searchInput.addEventListener('input', searchHandler);
     ui.modals.addCard.confirmButton.addEventListener('click', addCardHandler);
     ui.card.list.addEventListener('click', cardListClickHandler);
     ui.card.startSwipeButton.addEventListener('click', startSwipeHandler);
@@ -239,6 +218,7 @@ export const initCardView = (ui, deckId, deckName, { onStartSwipe, onShowGallery
 
     return () => {
         if (cardsUnsubscribe) cardsUnsubscribe();
+        ui.card.searchInput.removeEventListener('input', searchHandler);
         ui.modals.addCard.confirmButton.removeEventListener('click', addCardHandler);
         ui.card.list.removeEventListener('click', cardListClickHandler);
         ui.card.startSwipeButton.removeEventListener('click', startSwipeHandler);

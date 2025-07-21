@@ -23,6 +23,7 @@ export const initUI = () => {
         showSignupTab: document.getElementById('show-signup-tab'),
         loginButton: document.getElementById('login-button'),
         signupButton: document.getElementById('signup-button'),
+        googleSigninButton: document.getElementById('google-signin-button'),
         error: document.getElementById('auth-error'),
     };
 
@@ -45,6 +46,7 @@ export const initUI = () => {
         startSwipeButton: document.getElementById('start-swipe-button'),
         toggleGalleryButton: document.getElementById('toggle-gallery-button'),
         addCardFab: document.getElementById('add-card-fab'),
+        searchInput: document.getElementById('card-search-input'), // 追加
     };
     
     // ===== Swipe View =====
@@ -64,6 +66,7 @@ export const initUI = () => {
         grid: document.getElementById('gallery-grid'),
         zoomSlider: document.getElementById('gallery-zoom-slider'),
         backButton: document.getElementById('back-to-cards-from-gallery'),
+        searchInput: document.getElementById('gallery-search-input'), // 追加
     };
 
     // ===== Modals =====

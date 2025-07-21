@@ -5,21 +5,43 @@
 
 let state = {};
 
+/**
+ * ギャラリービューを初期化します。
+ * @param {object} ui - UI要素のオブジェクト
+ * @param {Array<object>} cards - 表示するカードの配列
+ * @returns {Function} クリーンアップ関数
+ */
 export const initGalleryView = (ui, cards) => {
     state = {
         ui,
-        cards,
+        allCards: [...cards],
+        filteredCards: [...cards],
         longPressTimer: null,
     };
 
     renderGallery();
     updateGridColumns(ui.gallery.zoomSlider.value);
 
+    const filterAndRender = (searchTerm) => {
+        if (!searchTerm) {
+            state.filteredCards = [...state.allCards];
+        } else {
+            state.filteredCards = state.allCards.filter(card => {
+                const front = card.frontText?.toLowerCase() || '';
+                const back = card.backText?.toLowerCase() || '';
+                return front.includes(searchTerm) || back.includes(searchTerm);
+            });
+        }
+        renderGallery();
+    };
+
+    const searchHandler = (e) => filterAndRender(e.target.value.toLowerCase());
     const zoomHandler = (e) => updateGridColumns(e.target.value);
     const gridClickHandler = (e) => handleGridClick(e);
     const gridPressHandler = (e) => handleGridPress(e);
     const modalClickHandler = () => hideEnlargedCard();
 
+    ui.gallery.searchInput.addEventListener('input', searchHandler);
     ui.gallery.zoomSlider.addEventListener('input', zoomHandler);
     ui.gallery.grid.addEventListener('click', gridClickHandler);
     ui.gallery.grid.addEventListener('mousedown', gridPressHandler);
@@ -27,10 +49,10 @@ export const initGalleryView = (ui, cards) => {
     ui.gallery.grid.addEventListener('mouseleave', clearLongPressTimer);
     ui.gallery.grid.addEventListener('touchstart', gridPressHandler, { passive: true });
     ui.gallery.grid.addEventListener('touchend', clearLongPressTimer);
-    
     ui.modals.gallery.modal.addEventListener('click', modalClickHandler);
 
     return () => {
+        ui.gallery.searchInput.removeEventListener('input', searchHandler);
         ui.gallery.zoomSlider.removeEventListener('input', zoomHandler);
         ui.gallery.grid.removeEventListener('click', gridClickHandler);
         ui.gallery.grid.removeEventListener('mousedown', gridPressHandler);
@@ -44,7 +66,7 @@ export const initGalleryView = (ui, cards) => {
 
 function renderGallery() {
     state.ui.gallery.grid.innerHTML = '';
-    state.cards.forEach(card => {
+    state.filteredCards.forEach(card => {
         const cardElement = createGalleryCardElement(card);
         state.ui.gallery.grid.appendChild(cardElement);
     });
@@ -115,7 +137,7 @@ function clearLongPressTimer() {
 }
 
 function showEnlargedCard(cardId) {
-    const cardData = state.cards.find(c => c.id === cardId);
+    const cardData = state.filteredCards.find(c => c.id === cardId);
     if (!cardData) return;
 
     const modalContent = state.ui.modals.gallery.content;

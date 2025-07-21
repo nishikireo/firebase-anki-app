@@ -2,10 +2,11 @@ import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signOut,
-    onAuthStateChanged
+    onAuthStateChanged,
+    GoogleAuthProvider,
+    signInWithPopup
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-// uiオブジェクトは引数で受け取るように変更し、直接インポートしない
-import { showView } from './ui.js';
+import { ui, showView } from './ui.js';
 import { auth } from './firebase.js';
 
 // Firebase Authのエラーコードを日本語メッセージに変換
@@ -21,32 +22,36 @@ const getAuthErrorMessage = (error) => {
             return 'このメールアドレスは既に使用されています。';
         case 'auth/weak-password':
             return 'パスワードは6文字以上で入力してください。';
+        case 'auth/popup-closed-by-user':
+            return 'ログインがキャンセルされました。';
+        case 'auth/account-exists-with-different-credential':
+            return 'このメールアドレスは既に使用されています。';
         default:
             return '認証に失敗しました。もう一度お試しください。';
     }
 };
 
 // 認証関連のUIイベントを初期化
-// 引数としてuiオブジェクトと、ログイン・ログアウト時のコールバック関数を受け取る
-export const initAuth = (ui, { onLogin, onLogout }) => {
+// 引数としてログイン・ログアウト時のコールバック関数を受け取る
+export const initAuth = ({ onLogin, onLogout }) => {
     // タブ切り替え
     ui.auth.showLoginTab.addEventListener('click', () => {
         ui.auth.loginForm.classList.remove('hidden');
         ui.auth.signupForm.classList.add('hidden');
-        ui.auth.showLoginTab.classList.add('text-indigo-600', 'border-indigo-600');
-        ui.auth.showLoginTab.classList.remove('text-gray-500');
-        ui.auth.showSignupTab.classList.add('text-gray-500');
-        ui.auth.showSignupTab.classList.remove('text-indigo-600', 'border-indigo-600');
+        ui.auth.showLoginTab.classList.add('text-blue-600', 'border-blue-600');
+        ui.auth.showLoginTab.classList.remove('text-slate-500');
+        ui.auth.showSignupTab.classList.add('text-slate-500');
+        ui.auth.showSignupTab.classList.remove('text-blue-600', 'border-blue-600');
         ui.auth.error.textContent = '';
     });
 
     ui.auth.showSignupTab.addEventListener('click', () => {
         ui.auth.loginForm.classList.add('hidden');
         ui.auth.signupForm.classList.remove('hidden');
-        ui.auth.showSignupTab.classList.add('text-indigo-600', 'border-indigo-600');
-        ui.auth.showSignupTab.classList.remove('text-gray-500');
-        ui.auth.showLoginTab.classList.add('text-gray-500');
-        ui.auth.showLoginTab.classList.remove('text-indigo-600', 'border-indigo-600');
+        ui.auth.showSignupTab.classList.add('text-blue-600', 'border-blue-600');
+        ui.auth.showSignupTab.classList.remove('text-slate-500');
+        ui.auth.showLoginTab.classList.add('text-slate-500');
+        ui.auth.showLoginTab.classList.remove('text-blue-600', 'border-blue-600');
         ui.auth.error.textContent = '';
     });
 
@@ -69,6 +74,18 @@ export const initAuth = (ui, { onLogin, onLogout }) => {
         ui.auth.error.textContent = '';
         try {
             await signInWithEmailAndPassword(auth, email, password);
+        } catch (error) {
+            ui.auth.error.textContent = getAuthErrorMessage(error);
+        }
+    });
+
+    // Googleログインボタン
+    ui.auth.googleSigninButton.addEventListener('click', async () => {
+        ui.auth.error.textContent = '';
+        const provider = new GoogleAuthProvider();
+        try {
+            await signInWithPopup(auth, provider);
+            // 成功するとonAuthStateChangedが発火するので、ここでの特別な処理は不要
         } catch (error) {
             ui.auth.error.textContent = getAuthErrorMessage(error);
         }
